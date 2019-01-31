@@ -336,20 +336,26 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
 
   private class VFSReader implements Runnable {
       private boolean terminated = false;
-      private Reader reader;
-      private FileObject fileObject;
 
       private boolean IsGZip(String fileName) {
     	  return fileName.endsWith( ".gz" );
       }
       
+      
       public void run() {
+    	  ProcessSingleFile(getFileURL());
+      }
+      
+      public void ProcessSingleFile(String fileUrl) {
+          Reader reader = null;
+          FileObject fileObject = null;
+
         	//thread should end when we're no longer active
             while (reader == null && !terminated) {
-            	int atIndex = getFileURL().indexOf("@");
-            	int protocolIndex = getFileURL().indexOf("://");
+            	int atIndex = fileUrl.indexOf("@");
+            	int protocolIndex = fileUrl.indexOf("://");
             	
-            	String loggableFileURL = atIndex > -1? getFileURL().substring(0, protocolIndex + "://".length()) + "username:password" + getFileURL().substring(atIndex) : getFileURL();
+            	String loggableFileURL = atIndex > -1? fileUrl.substring(0, protocolIndex + "://".length()) + "username:password" + fileUrl.substring(atIndex) : fileUrl;
                 getLogger().info("attempting to load file: " + loggableFileURL);
                 try {
                     FileSystemManager fileSystemManager = VFS.getManager();
@@ -362,7 +368,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                     }
 
 					synchronized(fileSystemManager) {
-                        fileObject = fileSystemManager.resolveFile(getFileURL(), opts);
+                        fileObject = fileSystemManager.resolveFile(fileUrl, opts);
                         if (fileObject.exists()) {
                             reader = new InputStreamReader(fileObject.getContent().getInputStream() , "UTF-8");
                             //now that we have a reader, remove additional portions of the file url (sftp passwords, etc.)
@@ -420,7 +426,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                                 fileObject = null;
                             }
                         
-                        	fileObject = fileSystemManager.resolveFile(getFileURL(), opts);
+                        	fileObject = fileSystemManager.resolveFile(fileUrl, opts);
                         }
 
                         //file may not exist..
@@ -433,7 +439,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                                 getLogger().info(getPath() + " - unable to refresh fileobject", err);
                             }
 
-                            if(IsGZip(getFileURL())) {
+                            if(IsGZip(fileUrl)) {
                                 InputStream gzipStream = new GZIPInputStream(fileObject.getContent().getInputStream());
                                 Reader decoder = new InputStreamReader(gzipStream,  "UTF-8");
                                 BufferedReader bufferedReader = new BufferedReader(decoder);
