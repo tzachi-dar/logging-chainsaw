@@ -436,6 +436,11 @@
 		<scope>test</scope>
 	</dependency>
     <dependency>
+       <groupId>commons-io</groupId>
+       <artifactId>commons-io</artifactId>
+       <version>2.6</version>
+    </dependency>	
+    <dependency>
         <groupId>org.apache.geronimo.specs</groupId>
         <artifactId>geronimo-jms_1.1_spec</artifactId>
         <version>1.0</version>
