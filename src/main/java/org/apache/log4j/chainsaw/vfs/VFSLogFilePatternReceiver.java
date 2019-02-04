@@ -45,15 +45,15 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.vfs.FileObject;
-import org.apache.commons.vfs.FileSystemException;
-import org.apache.commons.vfs.FileSystemManager;
-import org.apache.commons.vfs.FileSystemOptions;
-import org.apache.commons.vfs.RandomAccessContent;
-import org.apache.commons.vfs.VFS;
-import org.apache.commons.vfs.provider.URLFileName;
-import org.apache.commons.vfs.provider.sftp.SftpFileSystemConfigBuilder;
-import org.apache.commons.vfs.util.RandomAccessMode;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
+import org.apache.commons.vfs2.FileSystemManager;
+import org.apache.commons.vfs2.FileSystemOptions;
+import org.apache.commons.vfs2.RandomAccessContent;
+import org.apache.commons.vfs2.VFS;
+import org.apache.commons.vfs2.provider.URLFileName;
+import org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder;
+import org.apache.commons.vfs2.util.RandomAccessMode;
 import org.apache.log4j.chainsaw.receivers.VisualReceiver;
 import org.apache.log4j.varia.LogFilePatternReceiver;
 
@@ -394,6 +394,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                     
                     try {
                         SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(opts, "no");
+                        SftpFileSystemConfigBuilder.getInstance( ).setUserDirIsRoot(opts, false);
                     } catch (NoClassDefFoundError ncdfe) {
                         getLogger().warn("JSch not on classpath!", ncdfe);
                     }
@@ -438,6 +439,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                     //if jsch not in classpath, can get NoClassDefFoundError here
                     try {
                     	SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(opts, "no");
+                    	SftpFileSystemConfigBuilder.getInstance( ).setUserDirIsRoot(opts, false);
                     } catch (NoClassDefFoundError ncdfe) {
                     	getLogger().warn("JSch not on classpath!", ncdfe);
                     }
@@ -454,7 +456,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                                 setPath(cannonicalPath != null ? cannonicalPath : urlFileName.getPath());
                             }
                         } else {
-                            getLogger().info(loggableFileURL + " not available - will re-attempt to load after waiting " + MISSING_FILE_RETRY_MILLIS + " millis");
+                            getLogger().info(loggableFileURL + " not available2 - will re-attempt to load after waiting " + MISSING_FILE_RETRY_MILLIS + " millis");
                         }
                     }
                 } catch (FileSystemException fse) {
@@ -489,6 +491,8 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                         //if jsch not in classpath, can get NoClassDefFoundError here
                         try {
                             SftpFileSystemConfigBuilder.getInstance().setStrictHostKeyChecking(opts, "no");
+                            SftpFileSystemConfigBuilder.getInstance( ).setUserDirIsRoot(opts, false);
+                            
                         } catch (NoClassDefFoundError ncdfe) {
                             getLogger().warn("JSch not on classpath!", ncdfe);
                         }
@@ -497,7 +501,6 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                         synchronized(fileSystemManager) {
                             if (fileObject != null) {
                                 fileObject.getFileSystem().getFileSystemManager().closeFileSystem(fileObject.getFileSystem());
-                                fileObject.close();
                                 fileObject = null;
                             }
                         
@@ -515,7 +518,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                             }
 
                             if(IsGZip(fileUrl)) {
-                                InputStream gzipStream = new GZIPInputStream(fileObject.getContent().getInputStream());
+                                InputStream gzipStream = new GZIPInputStream(fileObject.getContent().getInputStream(), 64 * 1024);
                                 Reader decoder = new InputStreamReader(gzipStream,  "UTF-8");
                                 BufferedReader bufferedReader = new BufferedReader(decoder);
                                 process(bufferedReader);
@@ -547,7 +550,7 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                                 getLogger().debug(getPath() + " - unable to close reader", ioe);
                             }
                         } else {
-                            getLogger().info(getPath() + " - not available - will re-attempt to load after waiting " + getWaitMillis() + " millis");
+                            getLogger().info(getPath() + " - not available1" + fileObject +  "- will re-attempt to load after waiting " + getWaitMillis() + " millis");
                         }
 
                         try {
@@ -560,13 +563,13 @@ public class VFSLogFilePatternReceiver extends LogFilePatternReceiver implements
                         }
                     } while (isTailing() && !terminated && !readingFinished && !forceNoTail);
                 } catch (IOException ioe) {
-                    getLogger().info(getPath() + " - exception processing file", ioe);
+                    getLogger().info(getPath() + " - exception processing file1", ioe);
                     try {
                         if (fileObject != null) {
                             fileObject.close();
                         }
                     } catch (FileSystemException e) {
-                        getLogger().info(getPath() + " - exception processing file", e);
+                        getLogger().info(getPath() + " - exception processing file2", e);
                     }
                     try {
                         synchronized(this) {
