@@ -525,9 +525,16 @@ public class LogFilePatternReceiver extends Receiver {
                   line = line + newLine + thisLine;
                 }
             }
+        	if(!line.startsWith("20") && line.length()> 100) {
+        		System.out.println("Ignoring line (too big to send to regex)" + line);
+        		continue;
+        	}
+
             eventMatcher = regexpPattern.matcher(line);
             //skip empty line entries
-            if (line.trim().equals("")) {continue;}
+            if (line.trim().equals("")) {
+            	continue;
+            }
             exceptionMatcher = exceptionPattern.matcher(line);
             if (eventMatcher.matches()) {
                 //build an event from the previous match (held in current map)
